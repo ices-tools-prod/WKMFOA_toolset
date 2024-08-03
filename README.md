@@ -1,5 +1,5 @@
 
-# FLR toolset for evaluating recovery plans for ICES WKREBUILD2
+# FLR toolset for evaluating multi-annual management plans for ICES WKMFOA
 
 - Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl
 
