@@ -9,6 +9,12 @@
 # SET doFuture to ignore warning on RNG
 options(doFuture.rng.onMisuse="ignore")
 
+# SET future plan
+if(os.unix()) {
+  plan(multicore, workers=cores)
+} else {
+  plan(multisession, workers=cores)
+}
 
 # icesmetrics {{{
 
@@ -19,12 +25,12 @@ icesmetrics <- list(FMSY=fbar~Fmsy, SBMSY=ssb~Btrigger,
 
 # }}}
 
-# WKREBUILD2 performance statistics {{{
+# performance statistics {{{
 
 annualstats <- list(
 
   # P(SB>SBlim)
-  PBlim=list(~iterMeans((SB/Blim) > 0), name="P(SB>SB[lim])",
+  PBlim=list(~iterMeans((SB/Blim) > 1), name="P(SB>SB[lim])",
     desc="Probability that spawner biomass is above Blim"),
 
   # P(SB>SBtrigger)
@@ -65,7 +71,7 @@ fullstats <- list(
 
 # fwd function with process error added {{{
 
-pefwd <- function(object, sr, catch=NULL, fbar = NULL,
+pefwd <- function(object, sr=rec(object), catch=NULL, fbar = NULL,
   deviances = rec(object) %=% 1) {
 
   # CHECK inputs
@@ -77,6 +83,7 @@ pefwd <- function(object, sr, catch=NULL, fbar = NULL,
     stop("'catch' or 'fbar' missing")
   }
 
+  # EXTRACT FLStock
   stock <- object@stock
 
   # DIMS
@@ -88,31 +95,26 @@ pefwd <- function(object, sr, catch=NULL, fbar = NULL,
   else
     hiny <- dims(fbar)$minyear
 
-  # COMPUTE process error, e = y/(x exp(-z)) all ages except recruitment.
+  # COMPUTE process error, e = y/(x exp(-z)) all ages except recruitment ...
   perr <- stock.n(stock)[-1, ac(hiny:dy)] /
     (stock.n(stock)[-nages, ac(hiny:dy - 1)] *
      exp(-z(stock)[-nages, ac(hiny:dy - 1)]))
   
-#  perr <- log(stock.n(stock)[-1, ac(hiny:dy)]) -
-#    log(stock.n(stock)[-nages, ac(hiny:dy - 1)]) +
-#    z(stock)[-nages, ac(hiny:dy - 1)]
-  # nt+1 = nt * exp(-f-m+e)
-  #log(nt+1) =  log(nt) -f -m +e
-  # e = log(nt+1) - lo
-  
-  # PLUSGROUP
+  # ... and PLUSGROUP
   perr[ac(dims(stock)$max), ] <- stock.n(stock)[nages, ac(hiny:dy)] /
     (quantSums(stock.n(stock)[(nages - 1):nages, ac(hiny:dy - 1)] *
     exp(-z(stock)[(nages - 1):nages, ac(hiny:dy - 1)])))
       
+
+
   dhind_perr <- object
   perry <- perr
 
   for(Y in hiny:dy) {
 
-    # FWD(catch[y])
-    if(is.null(fbar))
-      dhind_perr <- fwd(dhind_perr, sr=sr, catch=catch[, ac(Y)],
+  # FWD(catch[y])
+  if(is.null(fbar))
+    dhind_perr <- fwd(dhind_perr, sr=sr, catch=catch[, ac(Y)],
         deviances=rec(object) %=% 1)
     else
       dhind_perr <- fwd(dhind_perr, sr=sr, fbar=fbar[, ac(Y)],
@@ -150,66 +152,6 @@ pefwd <- function(object, sr, catch=NULL, fbar = NULL,
   }
 
   om@stock <- hind_perr_log
-
-  return(om)
-}
-
-# }}}
-
-# fwd function with process error added {{{
-
-pefwd <- function(object, sr, catch=NULL, fbar = NULL,
-  deviances = rec(object) %=% 1) {
-
-  # CHECK inputs
-  if(!class(object)== "FLom") {
-    stop("make sure that class of object is om")
-  }
-  
-  if(is.null(catch) & is.null(fbar)){
-    stop("'catch' or 'fbar' missing")
-  }
-
-  stock <- stock(object)
-
-  # DIMS
-  nages <- dims(stock)$age
-  dy <- dims(stock)$maxyear
-
-  if(is.null(fbar))
-    hiny <- dims(catch)$minyear
-  else
-    hiny <- dims(fbar)$minyear
-
-  # COMPUTE process error, e = y/(x exp(-z)) all ages except recruitment.
-  perr <- stock.n(stock)[-1, ac(hiny:dy)] /
-    (stock.n(stock)[-nages, ac(hiny:dy-1)] *
-     exp(-z(stock)[-nages, ac(hiny:dy-1)]))
-  
-  # PLUSGROUP
-  perr[ac(dims(stock)$max), ] <- stock.n(stock)[nages, ac(hiny:dy)] /
-    (quantSums(stock.n(stock)[(nages-1):nages, ac(hiny:dy -1)] *
-    exp(-z(stock)[(nages-1):nages, ac(hiny:dy -1)])))
-
-  # BUG:
-  old <- stock
-  browser()
-      
-  for(Y in hiny:dy) {
-
-    # FWD(catch[y])
-    if(is.null(fbar))
-      stock <- fwd(stock, sr=sr, catch=catch[, ac(Y)],
-        deviances=deviances[, ac(Y)])
-    else
-      stock <- fwd(stock, sr=sr, fbar=fbar[, ac(Y)],
-        deviances=deviances[, ac(Y)])
-
-    stock.n(stock)[-1, ac(Y + 1)] <- stock.n(stock)[-1, ac(Y + 1)] *
-      perr[, ac(Y)]
-  }
-
-  stock(om) <- stock
 
   return(om)
 }

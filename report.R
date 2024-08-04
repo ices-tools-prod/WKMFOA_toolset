@@ -60,14 +60,6 @@ dev.off()
 
 load("model/model.rda", verbose = TRUE)
 
-
-runf0 <- fwd(om, control=fwdControl(year=seq(2024, 2050), quant="fbar",
-                                    value=0))
-
-taf.png("run_f0.png")
-plot(runf0)
-dev.off()
-
 # ADVICE rule run
 taf.png("model_advice_relative.png")
 plot(om, runs[['1']], metrics=icesmetrics) +
@@ -98,17 +90,9 @@ load("output/output.rda", verbose = TRUE)
 # PLOT long term performance
 taf.png("perf_bps.png")
 plotBPs(perf[year=='all']) + ylim(c(0, NA))
-#plotBPs(perf[year=='long']) + ylim(c(0, NA))
 dev.off()
 
-# plotBPs(perf[year=='short'], statistics=c("AAVC", "C", "risk2")) +
-#   ylim(c(0, NA))
-# 
-# plotBPs(perf[year=='medium'], statistics=c("AAVC", "C", "risk2")) +
-#   ylim(c(0, NA))
-
 # PLOT trade-offs
-
 taf.png("perf_tos.png")
 plotTOs(perf[year=='all'], x="C", y=c("AAVC", "risk2"))
 dev.off()

@@ -13,7 +13,9 @@ mkdir("model")
 library(mse)
 
 # CHOOSE number of cores for doFuture
-plan(multisession, workers=4)
+cores <- 2
+
+source("utilities.R")
 
 # LOAD oem and oem
 load('data/data.rda')
@@ -38,14 +40,14 @@ arule <- mpCtrl(list(
   # (i)mplementation (sys)tem: tac.is (C ~ F) + F deviances
   isys = mseCtrl(method=tac.is,
     args=list(recyrs=-2, fmin=0, Fdevs=sdevs$F))
-  ))
+))
 
 # plot HCR
 plot_hockeystick.hcr(arule$hcr, labels=c(lim="Blim", trigger="MSYBtrigger",
   min="", target="Ftarget")) +
   xlab(expression(hat(SSB))) + ylab(expression(bar(F)))
 
-# - RUN applying ICES advice rule
+# - RUN applying annual ICES advice rule
 system.time(
   advice <- mp(om, ctrl=arule, args=mseargs)
 )
@@ -53,21 +55,31 @@ system.time(
 # PLOT
 plot(om, advice)
 
+# COMPUTE performance statistics
+performance(advice) <- rbind(
+  # annual
+  performance(advice, statistics=annualstats, years=2024:2042),
+  # by period
+  performance(advice, statistics=fullstats, years=list(all=2024:2042)))
 
 # --- RUN over alternative advice frequencies (1, 2, 3, 5)
 
 library(future.apply)
 
-# TODO: MOVE to mps()
+# TODO: MOVE as option to mps()
 system.time(
 runs <- FLmses(future_lapply(setNames(nm=c(1, 2, 3, 5)), function(x)
-  mp(om, ctrl=arule, args=list(iy=2024, fy=2050, frq=x), parallel=FALSE)))
+  mp(om, ctrl=arule, args=list(iy=iy, fy=fy, frq=x), parallel=FALSE)))
 )
 
+# PLOT
 plot(window(om, start=2000), runs)
 
-# COMPUTE performance statistics
+# PLOT as relative to reference points
+plot(window(om, start=2000), runs, metrics=icesmetrics) +
+  geom_hline(yintercept=1, linetype=2, alpha=0.5)
 
+# COMPUTE performance statistics
 performance(runs) <- rbind(
   # annual
   performance(runs, statistics=annualstats, years=2024:2042),

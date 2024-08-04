@@ -1,7 +1,10 @@
 
-# FLR toolset for evaluating recovery plans for ICES WKREBUILD2
+# FLR toolset for evaluating multi-annual management plans for ICES WKMFOA
 
-- Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl
+- Iago MOSQUEIRA (WMR) <iago.mosqueira@wur.nl>
+- Jasper BLEIJENBERG (WMR) <jasper.bleijenberg@wur.nl>
+
+This TAF repository contains a template for conducting an evaluation of multi-annual management plans. A single management plan, assuming a shortcut of the stock assessment, the standard ICES advice rule and short-term forecast, can be run with different *frequencies*, that is, how often advice is provide.
 
 ## Installation
 
@@ -15,16 +18,12 @@ install.packages(icesTAF::deps(), repos=c(
   CRAN="https://cloud.r-project.org/"))
 ```
 
-They can also be installed from the source code in the [FLR github repositories](https://github.com/flr) by calling
+## data.R
 
-```r
-remotes::install_github(paste0("flr/", c("FLCore", "ggplotFL", "FLFishery", "FLasher", "FLSRTMB", "mse", "mseviz")))
-```
+There are three version of the data.R script, setup different according to the stock assessment model used to condition the OM.
 
-# Tutorial
+- data_ss3.R, uses an Stock Synthesis stock assessment (sol.27.4 as example). The OM contains the stock-recruitment relationship estimated by SS3.
 
-More information on the example analysis can be found in the [tutorial](https://htmlpreview.github.io/?https://github.com/ices-tools-prod/WKREBUILD_toolset/blob/main/tutorial.html).
+- data_sam.R, takes the result of a SAM run (). It builds the SRR uncertainty by bootstrap, and add the computed process error in the hindcast projection.
 
-# Release of analysis results
-
-A github release containing the results of running this code can be downloaded [here](https://github.com/ices-tools-prod/WKREBUILD_toolset/releases/tag/results_20231106).
+- data_a4a.R bases the OM on the result of an FLa4a run (). SRR uncertainty is also computed using bootstrap.
